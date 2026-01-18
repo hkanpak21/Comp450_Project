@@ -1,8 +1,8 @@
 import config
 from experiments import (run_experiment_A, run_experiment_B, run_experiment_C, 
-                         run_experiment_D, run_experiment_MNIST, run_experiment_CIFAR)
+                         run_experiment_D, run_experiment_E, run_experiment_MNIST, run_experiment_CIFAR)
 from utils.plotting_utils import (plot_experiment_a, plot_experiment_b, plot_experiment_c, 
-                                 plot_experiment_d, plot_experiment_mnist, plot_experiment_cifar)
+                                 plot_experiment_d, plot_experiment_e, plot_experiment_mnist, plot_experiment_cifar)
 import pandas as pd
 
 def main():
@@ -11,12 +11,14 @@ def main():
     df_B, point_B = run_experiment_B()
     df_C = run_experiment_C()
     df_D = run_experiment_D()
+    df_E = run_experiment_E()
 
     # Plot Synthetic
     plot_experiment_a(df_A, config.N_TRAIN)
     plot_experiment_b(df_B, point_B)
     plot_experiment_c(df_C, config.N_TRAIN)
     plot_experiment_d(df_D)
+    plot_experiment_e(df_E)
 
     # --- 2. Real Data Experiments ---
     try:
@@ -41,6 +43,9 @@ def main():
     
     print("\n--- EXP D: Noise Sensitivity ---")
     print(df_D.groupby('Noise')[['Rob_A', 'Rob_B']].mean().to_string())
+
+    print("\n--- EXP E: Adversarial Training ---")
+    print(df_E.groupby('N')[['Rob_Standard', 'Rob_AT', 'Rob_Generative']].mean().to_string())
 
     if 'df_MNIST' in locals():
         print("\n--- EXP MNIST ---")

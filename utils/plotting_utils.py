@@ -159,3 +159,22 @@ def plot_experiment_cifar(df):
     plt.title('CIFAR: Robustness & Norms vs. Overparametrization', fontweight='bold')
     plt.tight_layout()
     plt.show()
+
+COLOR_AT_MAIN = "#9467BD" # Purple
+COLOR_AT_FILL = "#C5B0D5" # Light Purple
+
+def plot_experiment_e(df):
+    """Plot for Experiment E: Adversarial Training Comparison."""
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    plot_with_error_bars(ax, df, 'Ratio', 'Rob_Standard', 'Discriminative (Standard)', COLOR_DISC_MAIN, COLOR_DISC_FILL)
+    plot_with_error_bars(ax, df, 'Ratio', 'Rob_AT', 'Discriminative (Adv. Trained)', COLOR_AT_MAIN, COLOR_AT_FILL)
+    plot_with_error_bars(ax, df, 'Ratio', 'Rob_Generative', 'Generative (Standard)', COLOR_GEN_MAIN, COLOR_GEN_FILL)
+
+    ax.set_xlabel('Overparametrization Ratio ($N/n$)')
+    ax.set_ylabel('Robust Accuracy (PGD)')
+    ax.set_title('Exp E: Adversarial Training Comparison')
+    ax.legend(loc='lower right')
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()

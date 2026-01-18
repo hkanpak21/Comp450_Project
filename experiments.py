@@ -203,3 +203,59 @@ def run_experiment_D():
         avg_rob_B = np.mean([r['Rob_B'] for r in results if r['Noise'] == nz])
         print(f"Noise={nz:.2f}: Avg Rob_A={avg_rob_A:.2f}, Avg Rob_B={avg_rob_B:.2f}")
     return pd.DataFrame(results)
+
+def run_experiment_E():
+    """Adversarial Training Comparison (The Defense)"""
+    print("\n>>> RUNNING EXPERIMENT E: Adversarial Training Comparison <<<")
+    # Focus on the Overparametrized Regime where the Curse happens
+    N_values = np.linspace(256, 2048, 6).astype(int)
+    results = []
+
+    for s in range(config.N_SEEDS):
+        # 1. Data Generation
+        X_tr, y_tr = generate_data(config.N_TRAIN, config.D, sigma_scale=1.0, noise=config.BASE_NOISE, seed=s)
+        X_te, y_te = generate_data(config.N_TEST, config.D, sigma_scale=1.0, noise=0.0, seed=None)
+
+        for N in N_values:
+            W = np.random.randn(N, config.D)
+            Phi_tr = get_random_features(X_tr, W)
+            Phi_te = get_random_features(X_te, W)
+
+            # --- Model 1: Standard Discriminative (Ridge) ---
+            th_std = train_ridge(Phi_tr, y_tr, lam=1e-6)
+
+            # --- Model 2: Generative (Centroid) ---
+            th_gen = train_generative(Phi_tr, y_tr)
+
+            # --- Model 3: Adversarial Training (Ridge + AT) ---
+            # Step A: Attack the training data using the standard model
+            X_tr_adv = pgd_attack(th_std, W, X_tr, y_tr, config.EPSILON, config.PGD_ALPHA, config.PGD_STEPS)
+            Phi_tr_adv = get_random_features(X_tr_adv, W)
+
+            # Step B: Train on mixture (Clean + Adversarial)
+            Phi_combined = np.vstack([Phi_tr, Phi_tr_adv])
+            y_combined = np.hstack([y_tr, y_tr])
+            th_at = train_ridge(Phi_combined, y_combined, lam=1e-6)
+
+            # --- EVALUATION (Robust Accuracy on Test Set) ---
+            # Attack Standard Model
+            X_adv_std = pgd_attack(th_std, W, X_te, y_te, config.EPSILON, config.PGD_ALPHA, config.PGD_STEPS)
+            rob_std = accuracy_score(y_te, np.sign(get_random_features(X_adv_std, W) @ th_std))
+
+            # Attack Generative Model
+            X_adv_gen = pgd_attack(th_gen, W, X_te, y_te, config.EPSILON, config.PGD_ALPHA, config.PGD_STEPS)
+            rob_gen = accuracy_score(y_te, np.sign(get_random_features(X_adv_gen, W) @ th_gen))
+
+            # Attack AT Model
+            X_adv_at = pgd_attack(th_at, W, X_te, y_te, config.EPSILON, config.PGD_ALPHA, config.PGD_STEPS)
+            rob_at = accuracy_score(y_te, np.sign(get_random_features(X_adv_at, W) @ th_at))
+
+            results.append({
+                'Ratio': N/config.N_TRAIN, 'Seed': s, 'N': N,
+                'Rob_Standard': rob_std,
+                'Rob_Generative': rob_gen,
+                'Rob_AT': rob_at
+            })
+        print(f"Seed {s} Complete. Final N={N}: Std={rob_std:.2f}, Gen={rob_gen:.2f}, AT={rob_at:.2f}")
+
+    return pd.DataFrame(results)
