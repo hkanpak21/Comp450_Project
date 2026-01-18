@@ -3,3 +3,7 @@ matplotlib
 scikit-learn
 scipy
 pandas
+seaborn
+tensorflow
+torch
+torchvision
